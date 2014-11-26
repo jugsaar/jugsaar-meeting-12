@@ -5,78 +5,75 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 
 public class E_NonBlockingSingleThreadedPollingServer {
 
-	public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws Exception {
 
-		try (ServerSocketChannel ssc = ServerSocketChannel.open()) {
+        try (ServerSocketChannel ssc = ServerSocketChannel.open()) {
 
-			ssc.bind(new InetSocketAddress("localhost", 1337));
-			ssc.configureBlocking(false);
+            ssc.bind(new InetSocketAddress("localhost", 1337));
+            ssc.configureBlocking(false);
 
-			Set<SocketChannel> sockets = Collections.newSetFromMap(new HashMap<SocketChannel, Boolean>());
+            Set<SocketChannel> sockets = new HashSet<>();
+            ByteBuffer buf = ByteBuffer.allocate(1024);
 
-			ByteBuffer buf = ByteBuffer.allocate(1024);
-			while (true) {
+            while (true) {
 
-				tryRegisterNewSocketChannel(ssc, sockets);
+                tryRegisterNewSocketChannel(ssc, sockets);
+                tryReadFromAndWriteToAnySocketChannel(sockets, buf);
+            }
+        }
+    }
 
-				tryReadFromAndWriteToAnySocketChannel(sockets, buf);
-			}
-		}
-	}
+    private static void tryReadFromAndWriteToAnySocketChannel(Set<SocketChannel> sockets, ByteBuffer buf) {
 
-	private static void tryReadFromAndWriteToAnySocketChannel(Set<SocketChannel> sockets, ByteBuffer buf) {
+        for (Iterator<SocketChannel> iter = sockets.iterator(); iter.hasNext(); ) {
 
-		for (Iterator<SocketChannel> iter = sockets.iterator(); iter.hasNext();) {
+            SocketChannel chan = iter.next();
 
-			SocketChannel chan = iter.next();
-			try {
+            try {
 
-				int read = chan.read(buf);
-				if (read == -1) {
-					iter.remove();
-				} else if (read != 0) {
+                int read = chan.read(buf);
+                if (read == -1) {
+                    iter.remove();
+                    System.out.printf("Removed connection: %s%n", chan);
+                } else if (read != 0) {
 
-					buf.flip();
+                    buf.flip();
+                    for (int i = 0; i < buf.limit(); i++) {
+                        buf.put(i, (byte) Util.invertCharacterCase(buf.get()));
+                    }
 
-					for (int i = 0; i < buf.limit(); i++) {
-						buf.put(i, (byte) Util.invertCharacterCase(buf.get()));
-					}
-					buf.flip();
+                    buf.flip();
+                    System.out.printf("Buffer: %s%n", buf);
 
-					System.out.printf("Buffer: %s%n", buf);
+                    int bytesWritten = chan.write(buf);
+                    System.out.printf("Wrote: %s bytes%n", bytesWritten);
 
-					int bytesWritten = chan.write(buf);
-					System.out.printf("Wrote: %s bytes%n", bytesWritten);
+                    buf.clear();
+                    System.out.println("finished reading");
+                }
 
-					buf.clear();
-					System.out.println("finished reading");
-				}
+            } catch (IOException e) {
+                System.err.printf("Connection problem: %s%n", e.getMessage());
+                iter.remove();
+            }
+        }
+    }
 
-			} catch (IOException e) {
-				System.err.println("Connection problem: " + e.getMessage());
-				iter.remove();
-			}
-		}
-	}
+    private static void tryRegisterNewSocketChannel(ServerSocketChannel ssc, Set<SocketChannel> sockets) throws IOException {
 
-	private static void tryRegisterNewSocketChannel(ServerSocketChannel ssc, Set<SocketChannel> sockets) throws IOException {
+        //polling
+        SocketChannel sc = ssc.accept(); // non-blocking call, may be null
 
-		//polling
-		SocketChannel sc = ssc.accept(); // non-blocking call, may be null
+        if (sc == null) {
+            return;
+        }
 
-		if (sc == null) {
-			return;
-		}
-
-		System.out.println("Connection from: " + sc);
-		sc.configureBlocking(false);
-		sockets.add(sc);
-	}
+        System.out.printf("Connection from: %s%n", sc);
+        sc.configureBlocking(false);
+        sockets.add(sc);
+    }
 }

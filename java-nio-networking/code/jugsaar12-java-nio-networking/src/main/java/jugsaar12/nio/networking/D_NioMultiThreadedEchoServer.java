@@ -8,19 +8,19 @@ import java.util.concurrent.Executors;
 
 public class D_NioMultiThreadedEchoServer {
 
-	public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws Exception {
 
-		ExecutorService es = Executors.newCachedThreadPool();
-		
-		try (ServerSocketChannel ssc = ServerSocketChannel.open()) {
-			
-			ssc.bind(new InetSocketAddress("localhost",1337));
+        ExecutorService es = Executors.newCachedThreadPool();
 
-			while (true) {
-				SocketChannel sc = ssc.accept(); //blocking call
-				
-				es.submit(() -> Util.process(sc));
-			}
-		}
-	}
+        try (ServerSocketChannel ssc = ServerSocketChannel.open()) {
+
+            ssc.bind(new InetSocketAddress("localhost", 1337));
+
+            while (true) {
+
+                SocketChannel sc = ssc.accept(); //blocking call
+                es.submit(() -> Util.process(sc));
+            }
+        }
+    }
 }

@@ -15,113 +15,118 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class F_NonBlockingSingleThreadedSelectorServer {
 
-	public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws Exception {
 
-		try (ServerSocketChannel ssc = ServerSocketChannel.open()) {
+        try (ServerSocketChannel ssc = ServerSocketChannel.open()) {
 
-			ssc.bind(new InetSocketAddress("localhost", 1337));
-			ssc.configureBlocking(false);
-			
-			Selector selector = Selector.open();
-			ssc.register(selector, SelectionKey.OP_ACCEPT);
+            ssc.bind(new InetSocketAddress("localhost", 1337));
+            ssc.configureBlocking(false);
 
-			Map<SocketChannel, Queue<ByteBuffer>> pendingData = new ConcurrentHashMap<>();
+            Selector selector = Selector.open();
+            ssc.register(selector, SelectionKey.OP_ACCEPT);
 
-			while (true) {
+            Map<SocketChannel, Queue<ByteBuffer>> pendingData = new ConcurrentHashMap<>();
 
-				selector.select();
+            while (true) {
 
-				for (Iterator<SelectionKey> itr = selector.selectedKeys().iterator(); itr.hasNext();) {
+                /*
+                * Selects a set of keys whose corresponding channels are ready for I/O operations.
+                * It returns only after at least one channel is selected,this selector's {@link #wakeup wakeup}
+                * method is invoked, or the current thread is interrupted, whichever comes first.
+                 */
+                selector.select();
 
-					SelectionKey key = itr.next();
-					itr.remove();
-					
-					if (!key.isValid()) {
-						continue;
-					}
+                for (Iterator<SelectionKey> itr = selector.selectedKeys().iterator(); itr.hasNext(); ) {
 
-					if (key.isAcceptable()) {
-						accept(key, pendingData);
-					} else if (key.isWritable()) {
-						write(key, pendingData);
-					} else if (key.isReadable()) {
-						read(key, pendingData);
-					}
-				}
-			}
-		}
-	}
+                    SelectionKey key = itr.next();
+                    itr.remove();
 
-	private static void write(SelectionKey key, Map<SocketChannel, Queue<ByteBuffer>> pendingData) {
+                    if (!key.isValid()) {
+                        continue;
+                    }
 
-		SocketChannel chan = (SocketChannel) key.channel();
-		Queue<ByteBuffer> queue = pendingData.get(chan);
+                    if (key.isAcceptable()) {
+                        accept(key, pendingData);
+                    } else if (key.isWritable()) {
+                        write(key, pendingData);
+                    } else if (key.isReadable()) {
+                        read(key, pendingData);
+                    }
+                }
+            }
+        }
+    }
 
-		try {
-			
-			ByteBuffer buf;
-			while ((buf = queue.peek()) != null) {
-				chan.write(buf);
-				if (!buf.hasRemaining()) {
-					queue.poll();
-				} else {
-					break;
-				}
-			}
+    private static void accept(SelectionKey key, Map<SocketChannel, Queue<ByteBuffer>> pendingData) throws Exception {
 
-			chan.register(key.selector(), SelectionKey.OP_READ);
-		} catch (IOException e) {
-			System.err.println("Connection problem: " + e.getMessage());
-			key.cancel();
-			pendingData.remove(chan);
-		}
-	}
+        ServerSocketChannel ssc = (ServerSocketChannel) key.channel();
 
-	private static void read(SelectionKey key, Map<SocketChannel, Queue<ByteBuffer>> pendingData) {
+        SocketChannel sc = ssc.accept(); // non blocking never null
+        System.out.printf("Connection from: %s%n", sc);
 
-		SocketChannel chan = (SocketChannel) key.channel();
-		ByteBuffer buf = ByteBuffer.allocate(1024);
-		
-		try {
+        sc.configureBlocking(false);
+        sc.register(key.selector(), SelectionKey.OP_READ);
 
-			int read = chan.read(buf);
-			if (read == -1) {
-				System.out.println("Removing: " + chan);
-				chan.close();
-				key.cancel();
-				pendingData.remove(chan);
-				return;
-			}
+        pendingData.put(sc, new ConcurrentLinkedQueue<>());
+    }
 
-			buf.flip();
-			for (int i = 0; i < buf.limit(); i++) {
-				buf.put(i, (byte) Util.invertCharacterCase(buf.get()));
-			}
-			buf.flip();
+    private static void write(SelectionKey key, Map<SocketChannel, Queue<ByteBuffer>> pendingData) {
 
-			System.out.printf("Buffer: %s%n", buf);
-			pendingData.get(chan).add(buf);
-			
-			chan.register(key.selector(), SelectionKey.OP_WRITE);
-			System.out.println("finished reading");
+        SocketChannel chan = (SocketChannel) key.channel();
+        Queue<ByteBuffer> queue = pendingData.get(chan);
 
-		} catch (IOException e) {
-			System.err.println("Connection problem: " + e.getMessage());
-			pendingData.remove(chan);
-			key.cancel();
-		}
-	}
+        try {
 
-	private static void accept(SelectionKey key, Map<SocketChannel, Queue<ByteBuffer>> pendingData) throws Exception {
+            ByteBuffer buf;
+            while ((buf = queue.peek()) != null) {
+                chan.write(buf);
+                if (!buf.hasRemaining()) {
+                    queue.poll();
+                } else {
+                    break;
+                }
+            }
 
-		ServerSocketChannel ssc = (ServerSocketChannel) key.channel();
+            chan.register(key.selector(), SelectionKey.OP_READ);
+        } catch (IOException e) {
+            System.err.printf("Connection problem: %s%n", e.getMessage());
+            key.cancel();
+            pendingData.remove(chan);
+        }
+    }
 
-		SocketChannel sc = ssc.accept(); // non blocking never null
-		System.out.println("Connection from: " + sc);
+    private static void read(SelectionKey key, Map<SocketChannel, Queue<ByteBuffer>> pendingData) {
 
-		sc.configureBlocking(false);
-		sc.register(key.selector(), SelectionKey.OP_READ);
+        SocketChannel chan = (SocketChannel) key.channel();
+        ByteBuffer buf = ByteBuffer.allocate(1024);
 
-		pendingData.put(sc, new ConcurrentLinkedQueue<ByteBuffer>());
-	}
+        try {
+
+            int read = chan.read(buf);
+            if (read == -1) {
+                System.out.printf("Removing: %s%n", chan);
+                chan.close();
+                key.cancel();
+                pendingData.remove(chan);
+                return;
+            }
+
+            buf.flip();
+            for (int i = 0; i < buf.limit(); i++) {
+                buf.put(i, (byte) Util.invertCharacterCase(buf.get()));
+            }
+            buf.flip();
+
+            System.out.printf("Buffer: %s%n", buf);
+            pendingData.get(chan).add(buf);
+
+            chan.register(key.selector(), SelectionKey.OP_WRITE);
+            System.out.println("finished reading");
+
+        } catch (IOException e) {
+            System.err.printf("Connection problem: %s%n", e.getMessage());
+            pendingData.remove(chan);
+            key.cancel();
+        }
+    }
 }
