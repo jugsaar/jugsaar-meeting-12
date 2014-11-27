@@ -3,11 +3,14 @@ package jugsaar12.nio.networking;
 import java.io.IOException;
 import java.net.Socket;
 
+/**
+ * sysctl kern.num_threads
+ */
 public class SocketGrabber {
 
     public static void main(String[] args) throws Exception {
 
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 20000; i++) {
             try {
                 new Socket("localhost", 1337).getOutputStream().write('H');
                 System.out.printf("Socket: %s%n", i);

@@ -6,6 +6,9 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * TODO MAX_POOL_SIZE to 1000
+ */
 public class D_NioMultiThreadedEchoServer {
 
     public static void main(String[] args) throws Exception {
@@ -14,13 +17,17 @@ public class D_NioMultiThreadedEchoServer {
 
         ExecutorService es = Executors.newCachedThreadPool();
 
+		//Difference: Instead of using a ServerSocket we use a ServerSocketChannel
         try (ServerSocketChannel ssc = ServerSocketChannel.open()) {
 
+			//bind it to an network interface associated with the given InetSocketAddress
             ssc.bind(new InetSocketAddress("localhost", 1337));
 
             while (true) {
 
-                SocketChannel sc = ssc.accept(); //blocking call
+				//Instead of a Socket, we get a SocketChannel
+                SocketChannel sc = ssc.accept(); //blocking call - never null
+
                 es.submit(() -> Util.process(sc));
             }
         }

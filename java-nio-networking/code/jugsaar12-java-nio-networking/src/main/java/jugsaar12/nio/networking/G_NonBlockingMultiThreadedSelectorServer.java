@@ -34,15 +34,15 @@ public class G_NonBlockingMultiThreadedSelectorServer {
             ssc.configureBlocking(false);
             ssc.register(selector, SelectionKey.OP_ACCEPT);
 
-            Queue<SocketChannel> toWrite = new LinkedBlockingQueue<>();
-            Map<SocketChannel, Queue<ByteBuffer>> pendingDataToRead = new ConcurrentHashMap<>();
+            Queue<SocketChannel> writeableChannels = new LinkedBlockingQueue<>();
+            Map<SocketChannel, Queue<ByteBuffer>> pendingDataToWrite = new ConcurrentHashMap<>();
 
             while (true) {
 
                 selector.select();
 
                 SocketChannel changeToWrite;
-                while ((changeToWrite = toWrite.poll()) != null) {
+                while ((changeToWrite = writeableChannels.poll()) != null) {
                     changeToWrite.register(selector, SelectionKey.OP_WRITE);
                 }
 
@@ -56,11 +56,11 @@ public class G_NonBlockingMultiThreadedSelectorServer {
                     }
 
                     if (key.isAcceptable()) {
-                        accept(key, pendingDataToRead);
+                        accept(key, pendingDataToWrite);
                     } else if (key.isWritable()) {
-                        write(key, pendingDataToRead);
+                        write(key, pendingDataToWrite);
                     } else if (key.isReadable()) {
-                        read(key, pendingDataToRead, toWrite, es);
+                        read(key, pendingDataToWrite, writeableChannels, es);
                     }
                 }
             }
@@ -81,15 +81,17 @@ public class G_NonBlockingMultiThreadedSelectorServer {
         pendingDataToRead.put(sc, new ConcurrentLinkedQueue<>());
     }
 
-    static void write(SelectionKey key, Map<SocketChannel, Queue<ByteBuffer>> pendingData) {
+    static void write(SelectionKey key, Map<SocketChannel, Queue<ByteBuffer>> pendingDataToWrite) {
 
         SocketChannel chan = (SocketChannel) key.channel();
-        Queue<ByteBuffer> queue = pendingData.get(chan);
+        Queue<ByteBuffer> queue = pendingDataToWrite.get(chan);
 
         try {
             ByteBuffer buf;
             while ((buf = queue.peek()) != null) {
-                chan.write(buf);
+
+				chan.write(buf); //write buffer to the channel
+
                 if (!buf.hasRemaining()) {
                     queue.poll();
                 } else {
@@ -100,11 +102,11 @@ public class G_NonBlockingMultiThreadedSelectorServer {
             chan.register(key.selector(), SelectionKey.OP_READ);
         } catch (IOException e) {
             LOG.info("Connection problem: " + e.getMessage());
-            pendingData.remove(chan);
+            pendingDataToWrite.remove(chan);
         }
     }
 
-    static void read(SelectionKey key, Map<SocketChannel, Queue<ByteBuffer>> pendingDataToRead, Queue<SocketChannel> toWrite, ExecutorService es) {
+    static void read(SelectionKey key, Map<SocketChannel, Queue<ByteBuffer>> pendingDataToWrite, Queue<SocketChannel> writeableChannels, ExecutorService es) {
 
         SocketChannel chan = (SocketChannel) key.channel();
         ByteBuffer buf = ByteBuffer.allocate(1024);
@@ -114,7 +116,7 @@ public class G_NonBlockingMultiThreadedSelectorServer {
             if (read == -1) {
                 LOG.info("Removing: " + chan);
                 chan.close();
-                pendingDataToRead.remove(chan);
+                pendingDataToWrite.remove(chan);
                 key.cancel();
                 return;
             }
@@ -126,12 +128,12 @@ public class G_NonBlockingMultiThreadedSelectorServer {
                     buf.put(i, (byte) Util.invertCharacterCase(buf.get()));
                 }
                 buf.flip();
-
                 LOG.info(String.format("Buffer: %s", buf));
+				LOG.info("finished reading");
 
-                pendingDataToRead.get(chan).add(buf);
-                LOG.info("finished reading");
-                toWrite.add(chan);
+                pendingDataToWrite.get(chan).add(buf);
+
+                writeableChannels.add(chan);
 
                 //Signal that we are done reading asynchronously
                 key.selector().wakeup();
@@ -139,7 +141,7 @@ public class G_NonBlockingMultiThreadedSelectorServer {
 
         } catch (IOException e) {
             LOG.warning("Connection problem: " + e.getMessage());
-            pendingDataToRead.remove(chan);
+            pendingDataToWrite.remove(chan);
         }
     }
 }

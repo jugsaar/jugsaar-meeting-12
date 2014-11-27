@@ -13,7 +13,7 @@ public class B_SimpleMultiThreadedEchoServer {
 
             while (true) {
 
-                Socket s = ss.accept();
+                Socket s = ss.accept(); // blocking-call, never returns null!
                 new Thread(() -> Util.process(s)).start();
             }
         }

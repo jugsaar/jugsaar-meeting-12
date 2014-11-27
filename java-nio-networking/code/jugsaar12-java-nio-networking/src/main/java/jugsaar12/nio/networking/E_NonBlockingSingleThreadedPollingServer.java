@@ -9,73 +9,75 @@ import java.util.*;
 
 public class E_NonBlockingSingleThreadedPollingServer {
 
-    public static void main(String[] args) throws Exception {
+	public static void main(String[] args) throws Exception {
 
 		System.out.println("E_NonBlockingSingleThreadedPollingServer running");
 
-        try (ServerSocketChannel ssc = ServerSocketChannel.open()) {
+		try (ServerSocketChannel ssc = ServerSocketChannel.open()) {
 
-            ssc.bind(new InetSocketAddress("localhost", 1337));
-            ssc.configureBlocking(false);
+			ssc.bind(new InetSocketAddress("localhost", 1337));
+			ssc.configureBlocking(false);
 
-            Set<SocketChannel> sockets = new HashSet<>();
-            ByteBuffer buf = ByteBuffer.allocate(1024);
+			Set<SocketChannel> sockets = new HashSet<>();
+			ByteBuffer buf = ByteBuffer.allocate(1024);
 
-            while (true) {
+			while (true) {
 
-                tryRegisterNewSocketChannel(ssc, sockets);
-                tryReadFromAndWriteToAnySocketChannel(sockets, buf);
-            }
-        }
-    }
+				//polling
+				tryRegisterNewSocketChannel(ssc, sockets);
 
-    private static void tryReadFromAndWriteToAnySocketChannel(Set<SocketChannel> sockets, ByteBuffer buf) {
+				tryReadFromAndWriteToAnySocketChannel(sockets, buf);
+			}
+		}
+	}
 
-        for (Iterator<SocketChannel> iter = sockets.iterator(); iter.hasNext(); ) {
+	private static void tryRegisterNewSocketChannel(ServerSocketChannel ssc, Set<SocketChannel> sockets) throws IOException {
 
-            SocketChannel chan = iter.next();
+		SocketChannel sc = ssc.accept(); // non-blocking call, may be null
 
-            try {
+		if (sc == null) {
+			return;
+		}
 
-                int read = chan.read(buf);
-                if (read == -1) {
-                    iter.remove();
-                    System.out.printf("Removed connection: %s%n", chan);
-                } else if (read != 0) {
+		System.out.printf("Connection from: %s%n", sc);
+		sc.configureBlocking(false);
+		sockets.add(sc);
+	}
 
-                    buf.flip();
-                    for (int i = 0; i < buf.limit(); i++) {
-                        buf.put(i, (byte) Util.invertCharacterCase(buf.get()));
-                    }
+	private static void tryReadFromAndWriteToAnySocketChannel(Set<SocketChannel> sockets, ByteBuffer buf) {
 
-                    buf.flip();
-                    System.out.printf("Buffer: %s%n", buf);
+		for (Iterator<SocketChannel> iter = sockets.iterator(); iter.hasNext(); ) {
 
-                    int bytesWritten = chan.write(buf);
-                    System.out.printf("Wrote: %s bytes%n", bytesWritten);
+			SocketChannel chan = iter.next();
 
-                    buf.clear();
-                    System.out.println("finished reading");
-                }
+			try {
 
-            } catch (IOException e) {
-                System.err.printf("Connection problem: %s%n", e.getMessage());
-                iter.remove();
-            }
-        }
-    }
+				int read = chan.read(buf);
+				if (read == -1) {
 
-    private static void tryRegisterNewSocketChannel(ServerSocketChannel ssc, Set<SocketChannel> sockets) throws IOException {
+					iter.remove();
+					System.out.printf("Removed connection: %s%n", chan);
+				} else if (read != 0) {
+					//Non-blocking -> read will be 0 most of the time...
 
-        //polling
-        SocketChannel sc = ssc.accept(); // non-blocking call, may be null
+					buf.flip();
+					for (int i = 0; i < buf.limit(); i++) {
+						buf.put(i, (byte) Util.invertCharacterCase(buf.get()));
+					}
 
-        if (sc == null) {
-            return;
-        }
+					buf.flip();
+					System.out.printf("Buffer: %s%n", buf);
 
-        System.out.printf("Connection from: %s%n", sc);
-        sc.configureBlocking(false);
-        sockets.add(sc);
-    }
+					int bytesWritten = chan.write(buf);
+					System.out.printf("Wrote: %s bytes%n", bytesWritten);
+
+					buf.clear();
+					System.out.println("finished reading");
+				}
+			} catch (IOException e) {
+				System.err.printf("Connection problem: %s%n", e.getMessage());
+				iter.remove();
+			}
+		}
+	}
 }
