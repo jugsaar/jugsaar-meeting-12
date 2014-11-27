@@ -133,7 +133,7 @@ public class F_NonBlockingSingleThreadedSelectorServer {
 			chan.register(key.selector(), SelectionKey.OP_WRITE);
 			System.out.println("finished reading");
 		} catch (IOException e) {
-			System.err.printf("Connection problem: %s%n", e.getMessage());
+//			System.err.printf("Connection problem: %s%n", e.getMessage());
 			pendingDataToWrite.remove(chan);
 			key.cancel();
 		}

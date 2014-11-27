@@ -75,7 +75,7 @@ public class E_NonBlockingSingleThreadedPollingServer {
 					System.out.println("finished reading");
 				}
 			} catch (IOException e) {
-				System.err.printf("Connection problem: %s%n", e.getMessage());
+				//System.err.printf("Connection problem: %s%n", e.getMessage());
 				iter.remove();
 			}
 		}
