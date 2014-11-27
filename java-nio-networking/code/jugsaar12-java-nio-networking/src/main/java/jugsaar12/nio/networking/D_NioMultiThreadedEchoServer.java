@@ -7,7 +7,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * TODO MAX_POOL_SIZE to 1000
+ * TODO inline newChachedThreadPool
+ * TODO set MAX_POOL_SIZE to 1000
+ * TODO change to fixedThreadPool
  */
 public class D_NioMultiThreadedEchoServer {
 
