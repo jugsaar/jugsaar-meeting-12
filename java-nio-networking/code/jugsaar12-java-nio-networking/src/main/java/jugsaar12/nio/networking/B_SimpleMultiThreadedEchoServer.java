@@ -5,17 +5,17 @@ import java.net.Socket;
 
 public class B_SimpleMultiThreadedEchoServer {
 
-    public static void main(String[] args) throws Exception {
+  public static void main(String[] args) throws Exception {
 
-		System.out.println("B_SimpleMultiThreadedEchoServer running");
+    System.out.println("B_SimpleMultiThreadedEchoServer running");
 
-        try (ServerSocket ss = new ServerSocket(1337)) {
+    try (ServerSocket ss = new ServerSocket(1337)) {
 
-            while (true) {
+      while (true) {
 
-                Socket s = ss.accept(); // blocking-call, never returns null!
-                new Thread(() -> Util.process(s)).start();
-            }
-        }
+        Socket s = ss.accept(); // blocking-call, never returns null!
+        new Thread(() -> Util.process(s)).start();
+      }
     }
+  }
 }

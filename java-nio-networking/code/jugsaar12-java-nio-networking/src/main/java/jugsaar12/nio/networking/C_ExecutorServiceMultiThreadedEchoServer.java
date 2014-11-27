@@ -2,28 +2,29 @@ package jugsaar12.nio.networking;
 
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * TODO MAX_POOL_SIZE to 1000
- *
+ * <p/>
  * TODO show RejectedExecutionHandler -> Default AbortPolicy, CallerRunsPolicy
  */
 public class C_ExecutorServiceMultiThreadedEchoServer {
 
-    public static void main(String[] args) throws Exception {
+  public static void main(String[] args) throws Exception {
 
-		System.out.println("C_ExecutorServiceMultiThreadedEchoServer running");
+    System.out.println("C_ExecutorServiceMultiThreadedEchoServer running");
 
-		ExecutorService es = Executors.newCachedThreadPool();
+    ExecutorService es = Executors.newCachedThreadPool();
 
-        try (ServerSocket ss = new ServerSocket(1337)) {
+    try (ServerSocket ss = new ServerSocket(1337)) {
 
-            while (true) {
+      while (true) {
 
-                Socket s = ss.accept(); // blocking-call, never returns null!
-                es.submit(() -> Util.process(s));
-            }
-        }
+        Socket s = ss.accept(); // blocking-call, never returns null!
+        es.submit(() -> Util.process(s));
+      }
     }
+  }
 }

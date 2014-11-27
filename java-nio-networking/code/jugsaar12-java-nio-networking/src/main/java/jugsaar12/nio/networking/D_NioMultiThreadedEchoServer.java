@@ -13,25 +13,25 @@ import java.util.concurrent.Executors;
  */
 public class D_NioMultiThreadedEchoServer {
 
-    public static void main(String[] args) throws Exception {
+  public static void main(String[] args) throws Exception {
 
-		System.out.println("D_NioMultiThreadedEchoServer running");
+    System.out.println("D_NioMultiThreadedEchoServer running");
 
-        ExecutorService es = Executors.newCachedThreadPool();
+    ExecutorService es = Executors.newCachedThreadPool();
 
-		//Difference: Instead of using a ServerSocket we use a ServerSocketChannel
-        try (ServerSocketChannel ssc = ServerSocketChannel.open()) {
+    //Difference: Instead of using a ServerSocket we use a ServerSocketChannel
+    try (ServerSocketChannel ssc = ServerSocketChannel.open()) {
 
-			//bind it to an network interface associated with the given InetSocketAddress
-            ssc.bind(new InetSocketAddress("localhost", 1337));
+      //bind it to an network interface associated with the given InetSocketAddress
+      ssc.bind(new InetSocketAddress("localhost", 1337));
 
-            while (true) {
+      while (true) {
 
-				//Instead of a Socket, we get a SocketChannel
-                SocketChannel sc = ssc.accept(); //blocking call - never null
+        //Instead of a Socket, we get a SocketChannel
+        SocketChannel sc = ssc.accept(); //blocking call - never null
 
-                es.submit(() -> Util.process(sc));
-            }
-        }
+        es.submit(() -> Util.process(sc));
+      }
     }
+  }
 }

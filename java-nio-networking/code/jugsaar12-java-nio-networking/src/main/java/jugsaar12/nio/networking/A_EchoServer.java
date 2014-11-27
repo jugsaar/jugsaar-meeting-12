@@ -8,17 +8,17 @@ import java.net.Socket;
  */
 public class A_EchoServer {
 
-    public static void main(String[] args) throws Exception {
+  public static void main(String[] args) throws Exception {
 
-		System.out.println("A_EchoServer running");
+    System.out.println("A_EchoServer running");
 
-        try (ServerSocket ss = new ServerSocket(1337)) {
+    try (ServerSocket ss = new ServerSocket(1337)) {
 
-            while (true) {
+      while (true) {
 
-                Socket s = ss.accept(); // blocking-call, never returns null!
-                Util.process(s);
-            }
-        }
+        Socket s = ss.accept(); // blocking-call, never returns null!
+        Util.process(s);
+      }
     }
+  }
 }
