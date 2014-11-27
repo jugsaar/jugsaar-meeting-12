@@ -9,6 +9,8 @@ public class C_ExecutorServiceMultiThreadedEchoServer {
 
     public static void main(String[] args) throws Exception {
 
+		System.out.println("C_ExecutorServiceMultiThreadedEchoServer running");
+
         ExecutorService es = Executors.newCachedThreadPool();
 
         try (ServerSocket ss = new ServerSocket(1337)) {

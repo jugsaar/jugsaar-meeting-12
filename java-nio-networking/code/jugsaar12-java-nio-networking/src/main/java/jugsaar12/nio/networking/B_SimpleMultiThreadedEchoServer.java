@@ -7,6 +7,8 @@ public class B_SimpleMultiThreadedEchoServer {
 
     public static void main(String[] args) throws Exception {
 
+		System.out.println("B_SimpleMultiThreadedEchoServer running");
+
         try (ServerSocket ss = new ServerSocket(1337)) {
 
             while (true) {

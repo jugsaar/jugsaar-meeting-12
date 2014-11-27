@@ -3,9 +3,6 @@ package jugsaar12.nio.networking;
 import java.io.IOException;
 import java.net.Socket;
 
-/**
- * Author: Tom
- */
 public class SocketGrabber {
 
     public static void main(String[] args) throws Exception {

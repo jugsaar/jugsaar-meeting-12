@@ -23,6 +23,8 @@ public class G_NonBlockingMultiThreadedSelectorServer {
 
     public static void main(String[] args) throws Exception {
 
+		System.out.println("G_NonBlockingMultiThreadedSelectorServer running");
+
         ExecutorService es = Executors.newFixedThreadPool(10);
 
         try (ServerSocketChannel ssc = ServerSocketChannel.open()) {

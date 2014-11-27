@@ -15,12 +15,12 @@ public class Util {
 
     public static void process(Socket s) {
 
-        System.out.println("Connection from: " + s);
+        System.out.printf("Connection from: %s%n", s);
 
         try (InputStream in = s.getInputStream(); //
              OutputStream out = s.getOutputStream()) {
 
-            System.out.println("Start reading from: " + s);
+            System.out.printf("Start reading from: %s%n", s);
 
             int data;
             while ((data = in.read()) != -1) {
@@ -28,16 +28,16 @@ public class Util {
                 out.write(data);
             }
 
-            System.out.println("Finished reading from: " + s);
+            System.out.printf("Finished reading from: %s%n", s);
 
         } catch (IOException e) {
-            System.err.println("Connection problem: " + e.getMessage());
+            System.err.printf("Connection problem: %s%n", e.getMessage());
         }
     }
 
     public static void process(SocketChannel sc) {
 
-        System.out.println("Connection from: " + sc);
+        System.out.printf("Connection from: %s%n", sc);
 
         try {
             ByteBuffer buf = ByteBuffer.allocate(1024);
@@ -70,7 +70,7 @@ public class Util {
 
             System.out.println("finished reading");
         } catch (IOException e) {
-            System.err.println("Connection problem: " + e.getMessage());
+            System.err.printf("Connection problem: %s%n", e.getMessage());
         }
     }
 }

@@ -17,6 +17,8 @@ public class F_NonBlockingSingleThreadedSelectorServer {
 
     public static void main(String[] args) throws Exception {
 
+		System.out.println("F_NonBlockingSingleThreadedSelectorServer running");
+
         try (ServerSocketChannel ssc = ServerSocketChannel.open()) {
 
             ssc.bind(new InetSocketAddress("localhost", 1337));

@@ -11,6 +11,8 @@ public class E_NonBlockingSingleThreadedPollingServer {
 
     public static void main(String[] args) throws Exception {
 
+		System.out.println("E_NonBlockingSingleThreadedPollingServer running");
+
         try (ServerSocketChannel ssc = ServerSocketChannel.open()) {
 
             ssc.bind(new InetSocketAddress("localhost", 1337));

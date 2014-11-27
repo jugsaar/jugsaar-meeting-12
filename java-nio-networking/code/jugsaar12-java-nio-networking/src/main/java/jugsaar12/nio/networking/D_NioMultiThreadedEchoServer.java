@@ -10,6 +10,8 @@ public class D_NioMultiThreadedEchoServer {
 
     public static void main(String[] args) throws Exception {
 
+		System.out.println("D_NioMultiThreadedEchoServer running");
+
         ExecutorService es = Executors.newCachedThreadPool();
 
         try (ServerSocketChannel ssc = ServerSocketChannel.open()) {
