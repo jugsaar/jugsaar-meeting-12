@@ -8,15 +8,23 @@ import java.net.Socket;
  */
 public class SocketGrabber {
 
-    public static void main(String[] args) throws Exception {
+	public static void main(String[] args) throws Exception {
 
-        for (int i = 0; i < 20000; i++) {
-            try {
-                new Socket("localhost", 1337).getOutputStream().write('H');
-                System.out.printf("Socket: %s%n", i);
-            } catch (IOException e) {
-                System.err.printf("Could not connect - %s%n", e);
-            }
-        }
-    }
+		for (int i = 0; i < 20000; i++) {
+			try {
+				try (Socket socket = new Socket("localhost", 1337)) {
+
+					//allow reuse socket address and ensure that the socket doesn't stay around for too long.
+					socket.setReuseAddress(true);
+					socket.setSoLinger(true, 0);
+
+					socket.getOutputStream().write('H');
+					socket.getInputStream().read();
+				}
+				System.out.printf("Socket: %s%n", i);
+			} catch (IOException e) {
+				System.err.printf("Could not connect - %s%n", e);
+			}
+		}
+	}
 }
